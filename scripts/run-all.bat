@@ -10,7 +10,7 @@ echo    - React Frontend (Node.js)
 echo.
 
 echo 🐳 Starting with Docker Compose...
-docker-compose up --build
+docker-compose -f ../docker/docker-compose.yml up --build
 
 echo.
 echo ✅ TodoWeb is running!

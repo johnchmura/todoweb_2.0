@@ -30,7 +30,7 @@ A modern task management application with an interactive galaxy-themed canvas in
 ```bash
 git clone <repository-url>
 cd todoweb_2.0
-cp env.example .env
+cp config/env.example .env
 # Edit .env with your configuration
 ```
 
@@ -108,6 +108,21 @@ todoweb_2.0/
 │   │   └── pages/          # Page components
 │   ├── public/             # Static assets
 │   └── package.json        # Frontend dependencies
+├── docker/                 # Docker configuration
+│   ├── docker-compose.yml  # Main Docker Compose file
+│   ├── docker-compose.light.yml  # Lightweight version
+│   ├── docker-compose.prod.yml   # Production version
+│   └── DOCKER_README.md    # Docker documentation
+├── scripts/                # Utility scripts
+│   ├── start-dev.bat       # Windows development start
+│   ├── start-prod.bat      # Windows production start
+│   ├── start-dev.sh        # Linux/Mac development start
+│   ├── start-prod.sh       # Linux/Mac production start
+│   └── test_backend.py     # Backend testing script
+├── config/                 # Configuration files
+│   └── env.example         # Environment variables template
+├── nginx/                  # Nginx configuration
+│   └── nginx.conf          # Nginx reverse proxy config
 ├── package.json            # Root package.json with scripts
 └── README.md
 ```
@@ -172,7 +187,7 @@ The application uses SQLite by default, but can be easily configured to use Post
 
 1. **Configure environment:**
    ```bash
-   cp env.example .env
+   cp config/env.example .env
    # Edit .env with production values
    ```
 

@@ -12,7 +12,7 @@ if not exist .env (
 )
 
 echo 📦 Building and starting services...
-docker-compose up --build
+docker-compose -f ../docker/docker-compose.yml up --build
 
 echo ✅ TodoWeb is running!
 echo 🌐 Frontend: http://localhost:3000

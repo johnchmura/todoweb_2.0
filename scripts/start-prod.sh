@@ -26,7 +26,7 @@ for var in "${required_vars[@]}"; do
 done
 
 echo "📦 Building and starting production services..."
-docker-compose -f docker-compose.prod.yml up --build -d
+docker-compose -f ../docker/docker-compose.prod.yml up --build -d
 
 echo "✅ TodoWeb is running in production mode!"
 echo "🌐 Application: https://localhost"
@@ -36,5 +36,5 @@ echo "📚 API Docs: https://localhost/api/docs"
 # Show running containers
 echo ""
 echo "📋 Running containers:"
-docker-compose -f docker-compose.prod.yml ps
+docker-compose -f ../docker/docker-compose.prod.yml ps
 
