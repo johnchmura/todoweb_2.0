@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # MySQL Database (optimized)
+  mysql:
+    image: mysql:8.0
+    container_name: todoweb_mysql_light
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-todoweb_root_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-todoweb}
+      MYSQL_USER: ${MYSQL_USER:-todoweb_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-todoweb_password}
+    volumes:
+      - mysql_data_light:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - todoweb_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    # Resource limits to control size
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Backend API (optimized)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.optimized
+    container_name: todoweb_backend_light
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=mysql+pymysql://${MYSQL_USER:-todoweb_user}:${MYSQL_PASSWORD:-todoweb_password}@mysql:3306/${MYSQL_DATABASE:-todoweb}
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:80}
+      - DB_ECHO=${DB_ECHO:-false}
+    ports:
+      - "8000:8000"
+    networks:
+      - todoweb_network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # Frontend (optimized)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.optimized
+    container_name: todoweb_frontend_light
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - todoweb_network
+    depends_on:
+      - backend
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+volumes:
+  mysql_data_light:
+    driver: local
+
+networks:
+  todoweb_network:
+    driver: bridge

@@ -1,0 +1,26 @@
+.experience-notification {
+  position: fixed;
+  z-index: 1000;
+  background: linear-gradient(45deg, #28a745, #20c997);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  pointer-events: none;
+  box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  animation: floatUp 2s ease-out forwards;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+}
+

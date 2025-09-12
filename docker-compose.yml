@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: todoweb_mysql_compose
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-todoweb_root_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-todoweb}
+      MYSQL_USER: ${MYSQL_USER:-todoweb_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-todoweb_password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - todoweb_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: todoweb_backend_compose
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=sqlite:///./todoweb.db
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:80}
+      - DB_ECHO=${DB_ECHO:-false}
+    ports:
+      - "8000:8000"
+    networks:
+      - todoweb_network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: todoweb_frontend_compose
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - todoweb_network
+    depends_on:
+      - backend
+
+  # Development frontend (for development with hot reload)
+  frontend_dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: todoweb_frontend_dev
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    networks:
+      - todoweb_network
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    profiles:
+      - dev
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  todoweb_network:
+    driver: bridge
+
