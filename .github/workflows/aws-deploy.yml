@@ -45,6 +45,11 @@ jobs:
         npm ci
     
     - name: Run backend tests
+      env:
+        SECRET_KEY: test-secret-key-for-ci
+        DATABASE_URL: sqlite:///./test.db
+        ALLOWED_ORIGINS: http://localhost:3000
+        DB_ECHO: false
       run: |
         cd backend
         pytest --cov=. --cov-report=xml
