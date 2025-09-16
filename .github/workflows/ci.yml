@@ -10,6 +10,7 @@ permissions:
   contents: read
   security-events: write
   actions: read
+  packages: write
 
 env:
   REGISTRY: ghcr.io
@@ -182,30 +183,38 @@ jobs:
           type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
 
-    - name: Build and push backend image
+    - name: Build backend image
       uses: docker/build-push-action@v5
       with:
         context: ./backend
-        push: true
+        push: false
         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: Build and push frontend image
+    - name: Build frontend image
       uses: docker/build-push-action@v5
       with:
         context: ./frontend
-        push: true
+        push: false
         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Test Docker images locally
+      run: |
+        echo "Testing backend image..."
+        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }} python -c "import main; print('Backend image works!')"
+        echo "Testing frontend image..."
+        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }} ls -la /usr/share/nginx/html/
+        echo "Docker images built successfully!"
+
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: [docker-build]
+    needs: [backend-tests, frontend-tests]
     if: github.event_name == 'push'
 
     steps:
