@@ -141,7 +141,19 @@ temp/
 # Test files
 test-results/
 coverage/
+*.coverage
+coverage.xml
+
+# Security and audit reports
+*-report.json
+bandit-report.json
+safety-report.json
+audit-report.json
 
 # Build outputs
 build/
 dist/
+
+# Test databases
+test.db
+*.test.db

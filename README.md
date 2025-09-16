@@ -81,36 +81,29 @@ scripts\start-prod.bat    # Windows
 ```bash
 git clone <repository-url>
 cd todoweb_2.0
-npm run setup
+
+# Backend setup
+cd backend
+pip install -r requirements.txt
+
+# Frontend setup
+cd ../frontend
+npm install
 ```
 
 **Start the development servers:**
 ```bash
+# Terminal 1 - Backend
+cd backend
+python -m uvicorn main:app --reload
+
+# Terminal 2 - Frontend
+cd frontend
 npm run dev
 ```
 
-This will start:
-- Backend API server on http://localhost:8000
-- Frontend development server on http://localhost:3000
-
 **Open your browser:**
 Navigate to http://localhost:3000 to see the application.
-
-### Individual Commands
-
-- **Backend only:**
-  ```bash
-  cd backend
-  pip install -r requirements.txt
-  python -m uvicorn main:app --reload
-  ```
-
-- **Frontend only:**
-  ```bash
-  cd frontend
-  npm install
-  npm run dev
-  ```
 
 ## Project Structure
 
@@ -124,7 +117,7 @@ todoweb_2.0/
 │   │   ├── test_tasks.py      # Task management tests
 │   │   └── test_calendar.py   # Calendar tests
 │   ├── Dockerfile             # Backend container definition
-│   └── .bandit                # Security linting config
+│   └── init.sql               # Database initialization
 ├── frontend/                  # React frontend
 │   ├── src/
 │   │   ├── components/        # React components
@@ -135,19 +128,12 @@ todoweb_2.0/
 │   ├── public/                # Static assets
 │   ├── package.json           # Frontend dependencies
 │   ├── vitest.config.js       # Test configuration
-│   └── Dockerfile             # Frontend container definition
+│   ├── Dockerfile             # Frontend container definition
+│   └── Dockerfile.dev         # Development container
 ├── docker/                    # Docker configuration
 │   ├── docker-compose.yml     # Development environment
 │   ├── docker-compose.light.yml  # Lightweight version
 │   └── docker-compose.prod.yml   # Production environment
-├── .github/                   # CI/CD configuration
-│   ├── workflows/             # GitHub Actions workflows
-│   │   ├── ci.yml            # Continuous Integration
-│   │   ├── cd.yml            # Continuous Deployment
-│   │   ├── security.yml      # Security scanning
-│   │   └── release.yml       # Release management
-│   ├── dependabot.yml        # Dependency updates
-│   └── CODEOWNERS            # Code ownership
 ├── scripts/                   # Utility scripts
 │   ├── start-dev.bat         # Windows development start
 │   ├── start-prod.bat        # Windows production start
@@ -160,7 +146,8 @@ todoweb_2.0/
 │   └── nginx.conf             # Reverse proxy config
 ├── config/                    # Configuration files
 │   └── env.example            # Environment variables template
-├── package.json               # Root package.json with scripts
+├── .gitignore                 # Git ignore rules
+├── TESTING.md                 # Testing documentation
 └── README.md                  # Project documentation
 ```
 
@@ -273,18 +260,6 @@ The application uses SQLite by default, but can be easily configured to use Post
 
 This project is licensed under the MIT License.
 
-## Migration from Next.js
-
-This application has been converted from a Next.js application to a FastAPI + React architecture while preserving all original functionality:
-
-- Interactive galaxy canvas with task management
-- Calendar with note-taking functionality
-- Experience points and leveling system
-- User authentication and management
-- Responsive design and animations
-- All original styling and UX preserved
-
-The new architecture provides better separation of concerns, improved scalability, and more flexibility for future enhancements.
 
 ## CI/CD Pipeline
 
