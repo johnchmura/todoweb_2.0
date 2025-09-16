@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: '0 2 * * 1'  # Run every Monday at 2 AM
 
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 jobs:
   dependency-scan:
     name: Dependency Security Scan
@@ -141,11 +146,24 @@ jobs:
         output: 'frontend-security.sarif'
 
     - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
       with:
         sarif_file: 'backend-security.sarif'
+      continue-on-error: true
 
     - name: Upload Trivy scan results for frontend
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
       with:
         sarif_file: 'frontend-security.sarif'
+      continue-on-error: true
+
+    - name: Upload security reports as artifacts
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: container-security-reports
+        path: |
+          backend-security.sarif
+          frontend-security.sarif

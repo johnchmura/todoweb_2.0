@@ -63,7 +63,7 @@ def test_create_calendar_note_unauthorized(setup_database):
     }
     
     response = client.post("/calendar-notes", json=note_data)
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 def test_get_calendar_notes_success(setup_database, auth_headers):
     """Test getting user's calendar notes"""

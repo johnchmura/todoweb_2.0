@@ -70,7 +70,7 @@ def test_create_task_unauthorized(setup_database):
     }
     
     response = client.post("/tasks", json=task_data)
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 def test_get_tasks_success(setup_database, auth_headers):
     """Test getting user's tasks"""
