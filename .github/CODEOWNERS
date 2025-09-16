@@ -1,0 +1,20 @@
+# Global code owners
+* @chmur
+
+# Backend specific
+/backend/ @chmur
+
+# Frontend specific
+/frontend/ @chmur
+
+# Docker configuration
+/docker/ @chmur
+Dockerfile* @chmur
+docker-compose*.yml @chmur
+
+# CI/CD workflows
+/.github/ @chmur
+
+# Documentation
+README.md @chmur
+*.md @chmur

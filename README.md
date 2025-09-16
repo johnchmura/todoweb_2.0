@@ -1,22 +1,41 @@
-# TodoWeb 2.0 - FastAPI + React
+# TodoWeb 2.0
 
-A modern task management application with an interactive galaxy-themed canvas interface, built with FastAPI backend and React frontend.
+A modern task management application featuring an interactive galaxy-themed canvas interface, built with FastAPI backend and React frontend.
+
+## Table of Contents
+
+- [Features](#features)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+- [API Endpoints](#api-endpoints)
+- [Features in Detail](#features-in-detail)
+- [Development](#development)
+- [Production Deployment](#production-deployment)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Testing](#testing)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)
+- [Migration from Next.js](#migration-from-nextjs)
 
 ## Features
 
-- 🌌 **Interactive Galaxy Canvas**: Create and manage tasks with a beautiful animated galaxy background
-- 📅 **Calendar Integration**: Add notes to specific dates with a responsive calendar interface
-- 🎮 **Experience Points System**: Gamified task completion with XP rewards and level progression
-- 🔐 **User Authentication**: Secure user management with JWT tokens
-- 📱 **Responsive Design**: Works seamlessly on desktop and mobile devices
-- ⚡ **Real-time Updates**: Live updates for task management and progress tracking
+- **Interactive Galaxy Canvas**: Create and manage tasks with an animated galaxy background
+- **Calendar Integration**: Add notes to specific dates with a responsive calendar interface
+- **Experience Points System**: Gamified task completion with XP rewards and level progression
+- **User Authentication**: Secure user management with JWT tokens
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Real-time Updates**: Live updates for task management and progress tracking
 
 ## Architecture
 
-- **Backend**: FastAPI with SQLAlchemy ORM and SQLite database
+- **Backend**: FastAPI with SQLAlchemy ORM and MySQL/SQLite database
 - **Frontend**: React with Vite build system
 - **Authentication**: JWT-based authentication system
-- **Database**: SQLite (easily configurable for PostgreSQL/MySQL)
+- **Database**: MySQL for production, SQLite for development
+- **Containerization**: Docker with multi-stage builds
+- **CI/CD**: GitHub Actions with automated testing and deployment
 
 ## Quick Start
 
@@ -97,34 +116,52 @@ Navigate to http://localhost:3000 to see the application.
 
 ```
 todoweb_2.0/
-├── backend/                 # FastAPI backend
-│   ├── main.py             # Main FastAPI application
-│   └── requirements.txt    # Python dependencies
-├── frontend/               # React frontend
+├── backend/                    # FastAPI backend
+│   ├── main.py                # Main FastAPI application
+│   ├── requirements.txt       # Python dependencies
+│   ├── tests/                 # Backend test suite
+│   │   ├── test_auth.py       # Authentication tests
+│   │   ├── test_tasks.py      # Task management tests
+│   │   └── test_calendar.py   # Calendar tests
+│   ├── Dockerfile             # Backend container definition
+│   └── .bandit                # Security linting config
+├── frontend/                  # React frontend
 │   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── context/        # React context providers
-│   │   ├── services/       # API service layer
-│   │   └── pages/          # Page components
-│   ├── public/             # Static assets
-│   └── package.json        # Frontend dependencies
-├── docker/                 # Docker configuration
-│   ├── docker-compose.yml  # Main Docker Compose file
+│   │   ├── components/        # React components
+│   │   ├── context/           # React context providers
+│   │   ├── services/          # API service layer
+│   │   ├── pages/             # Page components
+│   │   └── test/              # Frontend test suite
+│   ├── public/                # Static assets
+│   ├── package.json           # Frontend dependencies
+│   ├── vitest.config.js       # Test configuration
+│   └── Dockerfile             # Frontend container definition
+├── docker/                    # Docker configuration
+│   ├── docker-compose.yml     # Development environment
 │   ├── docker-compose.light.yml  # Lightweight version
-│   ├── docker-compose.prod.yml   # Production version
-│   └── DOCKER_README.md    # Docker documentation
-├── scripts/                # Utility scripts
-│   ├── start-dev.bat       # Windows development start
-│   ├── start-prod.bat      # Windows production start
-│   ├── start-dev.sh        # Linux/Mac development start
-│   ├── start-prod.sh       # Linux/Mac production start
-│   └── test_backend.py     # Backend testing script
-├── config/                 # Configuration files
-│   └── env.example         # Environment variables template
-├── nginx/                  # Nginx configuration
-│   └── nginx.conf          # Nginx reverse proxy config
-├── package.json            # Root package.json with scripts
-└── README.md
+│   └── docker-compose.prod.yml   # Production environment
+├── .github/                   # CI/CD configuration
+│   ├── workflows/             # GitHub Actions workflows
+│   │   ├── ci.yml            # Continuous Integration
+│   │   ├── cd.yml            # Continuous Deployment
+│   │   ├── security.yml      # Security scanning
+│   │   └── release.yml       # Release management
+│   ├── dependabot.yml        # Dependency updates
+│   └── CODEOWNERS            # Code ownership
+├── scripts/                   # Utility scripts
+│   ├── start-dev.bat         # Windows development start
+│   ├── start-prod.bat        # Windows production start
+│   ├── start-dev.sh          # Linux/Mac development start
+│   ├── start-prod.sh         # Linux/Mac production start
+│   ├── backup-db.sh          # Database backup
+│   ├── restore-db.sh         # Database restore
+│   └── test_backend.py       # Backend testing script
+├── nginx/                     # Nginx configuration
+│   └── nginx.conf             # Reverse proxy config
+├── config/                    # Configuration files
+│   └── env.example            # Environment variables template
+├── package.json               # Root package.json with scripts
+└── README.md                  # Project documentation
 ```
 
 ## API Endpoints
@@ -221,6 +258,8 @@ The application uses SQLite by default, but can be easily configured to use Post
 - **Health Checks**: Automatic container health monitoring
 - **Backup Scripts**: Database backup and restore utilities
 - **Security**: Rate limiting, security headers, and SSL support
+- **Multi-stage Builds**: Optimized container images
+- **Resource Management**: Memory and CPU limits
 
 ## Contributing
 
@@ -238,11 +277,53 @@ This project is licensed under the MIT License.
 
 This application has been converted from a Next.js application to a FastAPI + React architecture while preserving all original functionality:
 
-- ✅ Interactive galaxy canvas with task management
-- ✅ Calendar with note-taking functionality
-- ✅ Experience points and leveling system
-- ✅ User authentication and management
-- ✅ Responsive design and animations
-- ✅ All original styling and UX preserved
+- Interactive galaxy canvas with task management
+- Calendar with note-taking functionality
+- Experience points and leveling system
+- User authentication and management
+- Responsive design and animations
+- All original styling and UX preserved
 
 The new architecture provides better separation of concerns, improved scalability, and more flexibility for future enhancements.
+
+## CI/CD Pipeline
+
+This project includes comprehensive CI/CD automation:
+
+- **Automated Testing**: Unit and integration tests for both backend and frontend
+- **Security Scanning**: Vulnerability detection and code quality analysis
+- **Docker Building**: Automated container image building and publishing
+- **Deployment**: Automated staging and production deployments
+- **Release Management**: Automated release creation with changelog generation
+
+For detailed CI/CD documentation, see [.github/README.md](.github/README.md).
+
+## Testing
+
+### Backend Testing
+```bash
+cd backend
+pip install -r requirements.txt
+pytest
+```
+
+### Frontend Testing
+```bash
+cd frontend
+npm install
+npm test
+```
+
+### Integration Testing
+```bash
+python scripts/test_backend.py
+```
+
+## Security
+
+- JWT-based authentication with secure token handling
+- Password hashing using bcrypt
+- CORS configuration for secure cross-origin requests
+- SQL injection protection through SQLAlchemy ORM
+- Container security scanning with Trivy
+- Dependency vulnerability monitoring

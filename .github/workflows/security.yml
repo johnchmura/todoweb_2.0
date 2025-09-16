@@ -1,0 +1,151 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 2 * * 1'  # Run every Monday at 2 AM
+
+jobs:
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'table'
+        exit-code: '1'
+        ignore-unfixed: true
+
+    - name: Scan Docker images
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'mysql:8.0'
+        format: 'table'
+        exit-code: '1'
+        ignore-unfixed: true
+
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: |
+        cd backend
+        pip install bandit safety
+
+    - name: Run Bandit security linter
+      run: |
+        cd backend
+        bandit -r . -f json -o bandit-report.json || true
+
+    - name: Run Safety check
+      run: |
+        cd backend
+        safety check --json --output safety-report.json || true
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-reports
+        path: |
+          backend/bandit-report.json
+          backend/safety-report.json
+
+  frontend-security:
+    name: Frontend Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd frontend
+        npm ci
+
+    - name: Run npm audit
+      run: |
+        cd frontend
+        npm audit --audit-level=moderate --json > audit-report.json || true
+
+    - name: Run Snyk security scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+
+    - name: Upload frontend security reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-security-reports
+        path: frontend/audit-report.json
+
+  container-security:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build backend image
+      run: |
+        cd backend
+        docker build -t todoweb-backend:test .
+
+    - name: Build frontend image
+      run: |
+        cd frontend
+        docker build -t todoweb-frontend:test .
+
+    - name: Run Trivy image scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'todoweb-backend:test'
+        format: 'sarif'
+        output: 'backend-security.sarif'
+
+    - name: Run Trivy image scan for frontend
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'todoweb-frontend:test'
+        format: 'sarif'
+        output: 'frontend-security.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'backend-security.sarif'
+
+    - name: Upload Trivy scan results for frontend
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'frontend-security.sarif'
