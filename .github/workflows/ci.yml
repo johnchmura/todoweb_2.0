@@ -188,7 +188,9 @@ jobs:
       with:
         context: ./backend
         push: false
-        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}
+        tags: |
+          todoweb-backend:${{ github.sha }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
@@ -198,7 +200,9 @@ jobs:
       with:
         context: ./frontend
         push: false
-        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}
+        tags: |
+          todoweb-frontend:${{ github.sha }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
@@ -206,9 +210,9 @@ jobs:
     - name: Test Docker images locally
       run: |
         echo "Testing backend image..."
-        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }} python -c "import main; print('Backend image works!')"
+        docker run --rm todoweb-backend:${{ github.sha }} python -c "import main; print('Backend image works!')"
         echo "Testing frontend image..."
-        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }} ls -la /usr/share/nginx/html/
+        docker run --rm todoweb-frontend:${{ github.sha }} ls -la /usr/share/nginx/html/
         echo "Docker images built successfully!"
 
   integration-tests:
@@ -226,7 +230,7 @@ jobs:
 
     - name: Create test environment
       run: |
-        docker-compose -f docker/docker-compose.yml up -d
+        docker compose -f docker/docker-compose.yml up -d
         sleep 30
 
     - name: Run integration tests
@@ -237,4 +241,4 @@ jobs:
     - name: Cleanup
       if: always()
       run: |
-        docker-compose -f docker/docker-compose.yml down -v
+        docker compose -f docker/docker-compose.yml down -v
