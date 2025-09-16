@@ -188,9 +188,7 @@ jobs:
       with:
         context: ./backend
         push: false
-        tags: |
-          todoweb-backend:${{ github.sha }}
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}
+        tags: todoweb-backend:${{ github.sha }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
@@ -200,12 +198,15 @@ jobs:
       with:
         context: ./frontend
         push: false
-        tags: |
-          todoweb-frontend:${{ github.sha }}
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}
+        tags: todoweb-frontend:${{ github.sha }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+
+    - name: List built images
+      run: |
+        echo "Built Docker images:"
+        docker images | grep -E "(todoweb-backend|todoweb-frontend)"
 
     - name: Test Docker images locally
       run: |

@@ -13,7 +13,7 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-todoweb_password}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../backend/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "3306:3306"
     networks:
@@ -26,7 +26,7 @@ services:
   # Backend API
   backend:
     build:
-      context: ./backend
+      context: ../backend
       dockerfile: Dockerfile
     container_name: todoweb_backend_compose
     restart: unless-stopped
@@ -43,13 +43,13 @@ services:
       mysql:
         condition: service_healthy
     volumes:
-      - ./backend:/app
+      - ../backend:/app
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
   # Frontend
   frontend:
     build:
-      context: ./frontend
+      context: ../frontend
       dockerfile: Dockerfile
     container_name: todoweb_frontend_compose
     restart: unless-stopped
@@ -63,7 +63,7 @@ services:
   # Development frontend (for development with hot reload)
   frontend_dev:
     build:
-      context: ./frontend
+      context: ../frontend
       dockerfile: Dockerfile.dev
     container_name: todoweb_frontend_dev
     restart: unless-stopped
@@ -76,7 +76,7 @@ services:
     depends_on:
       - backend
     volumes:
-      - ./frontend:/app
+      - ../frontend:/app
       - /app/node_modules
     profiles:
       - dev
