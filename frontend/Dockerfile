@@ -7,14 +7,14 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies with clean cache
-RUN npm ci --only=production --silent && npm cache clean --force
+# Install dependencies with clean cache (including devDependencies for build)
+RUN npm ci --silent && npm cache clean --force
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN npx vite build
 
 # Production stage with minimal nginx
 FROM nginx:alpine
