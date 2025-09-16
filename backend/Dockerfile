@@ -24,9 +24,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Copy Python packages from builder
-COPY --from=builder /root/.local /root/.local
-
 # Set working directory
 WORKDIR /app
 
@@ -36,10 +33,16 @@ COPY . .
 # Create non-root user
 RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser:appuser /app
+
+# Copy Python packages from builder to user directory
+COPY --from=builder /root/.local /home/appuser/.local
+RUN chown -R appuser:appuser /home/appuser/.local
+
+# Switch to non-root user
 USER appuser
 
 # Add user packages to PATH
-ENV PATH=/root/.local/bin:$PATH
+ENV PATH=/home/appuser/.local/bin:$PATH
 
 # Expose port
 EXPOSE 8000
