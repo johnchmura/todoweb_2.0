@@ -38,11 +38,6 @@ jobs:
         npm ci
     
     - name: Run backend tests
-      env:
-        SECRET_KEY: test-secret-key-for-ci
-        DATABASE_URL: sqlite:///./test.db
-        ALLOWED_ORIGINS: http://localhost:3000
-        DB_ECHO: false
       run: |
         cd backend
         pytest --cov=. --cov-report=xml --cov-report=html
@@ -53,11 +48,6 @@ jobs:
         npm test -- --run --coverage
     
     - name: Run security scans
-      env:
-        SECRET_KEY: test-secret-key-for-ci
-        DATABASE_URL: sqlite:///./test.db
-        ALLOWED_ORIGINS: http://localhost:3000
-        DB_ECHO: false
       run: |
         cd backend
         pip install bandit safety
