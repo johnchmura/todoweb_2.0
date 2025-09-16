@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { userAPI } from '../services/api';
 import './ProgressBar.css';
 
 export default function ProgressBar() {

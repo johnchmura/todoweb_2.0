@@ -58,6 +58,9 @@ function TodoList() {
     }
   };
 
+  // Forward declaration
+  let MovingCircle;
+  
   const createCircleFromTask = (task) => {
     return new MovingCircle(
       task.x,
@@ -309,7 +312,7 @@ function TodoList() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
-    class MovingCircle {
+    MovingCircle = class MovingCircle {
       constructor(x, y, radius, color, dx = 2, dy = 2, label = '', Lcolor = 'white', taskId = null) {
         this.x = x;
         this.y = y;
@@ -414,7 +417,7 @@ function TodoList() {
           angle += angleIncrement;
         });
       }
-    }
+    };
 
     class MiniCircle extends MovingCircle {
       constructor(x, y, radius, color, dx = 2, dy = 2, label, Lcolor = 'black', parent = null, distanceFromCenter = 50) {

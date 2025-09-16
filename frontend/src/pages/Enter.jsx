@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import AuthForm from '../components/AuthForm';
 import toast from 'react-hot-toast';
@@ -35,7 +35,7 @@ export default function Enter() {
 function SignOutButton({ onSignOut }) {
   return (
     <div className="sign-out-section">
-      <h2>You're already signed in!</h2>
+      <h2>You&apos;re already signed in!</h2>
       <button className="btn-grey" onClick={onSignOut}>
         Sign Out
       </button>

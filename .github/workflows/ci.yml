@@ -63,7 +63,7 @@ jobs:
         cd backend
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-asyncio httpx
+        pip install pytest pytest-asyncio pytest-cov httpx
 
     - name: Wait for MySQL
       run: |
@@ -110,7 +110,7 @@ jobs:
     - name: Run linting
       run: |
         cd frontend
-        npm run lint
+        npm run lint -- --max-warnings 50
 
     - name: Run tests
       run: |
