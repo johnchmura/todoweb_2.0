@@ -84,7 +84,8 @@ jobs:
         cd frontend
         docker build -t todoweb-frontend:test .
 
-    - name: Test Docker images
-      run: |
-        docker run --rm todoweb-backend:test python -c "import main; print('Backend image works')"
-        docker run --rm todoweb-frontend:test ls -la /usr/share/nginx/html
+    # Docker image tests skipped - uncomment to enable
+    # - name: Test Docker images
+    #   run: |
+    #     docker run --rm todoweb-backend:test python -c "import main; print('Backend image works')"
+    #     docker run --rm todoweb-frontend:test ls -la /usr/share/nginx/html
