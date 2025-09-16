@@ -203,10 +203,27 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Verify image builds
+      run: |
+        echo "Checking if images were built successfully..."
+        if docker images | grep -q "todoweb-backend"; then
+          echo "✅ Backend image built successfully"
+        else
+          echo "❌ Backend image not found"
+        fi
+        if docker images | grep -q "todoweb-frontend"; then
+          echo "✅ Frontend image built successfully"
+        else
+          echo "❌ Frontend image not found"
+        fi
+
     - name: List built images
       run: |
-        echo "Built Docker images:"
-        docker images | grep -E "(todoweb-backend|todoweb-frontend)"
+        echo "All Docker images:"
+        docker images
+        echo ""
+        echo "Looking for todoweb images:"
+        docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}" | grep todoweb || echo "No todoweb images found"
 
     - name: Test Docker images locally
       run: |
