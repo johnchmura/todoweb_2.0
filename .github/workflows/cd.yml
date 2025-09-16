@@ -52,14 +52,6 @@ jobs:
         # Add smoke tests here
         # curl -f http://staging.yourdomain.com/health || exit 1
 
-    - name: Notify deployment
-      uses: 8398a7/action-slack@v3
-      if: always()
-      with:
-        status: ${{ job.status }}
-        channel: '#deployments'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-        fields: repo,message,commit,author,action,eventName,ref,workflow
 
   deploy-production:
     name: Deploy to Production
@@ -95,14 +87,6 @@ jobs:
         # Add health checks here
         # curl -f https://yourdomain.com/health || exit 1
 
-    - name: Notify deployment
-      uses: 8398a7/action-slack@v3
-      if: always()
-      with:
-        status: ${{ job.status }}
-        channel: '#deployments'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-        fields: repo,message,commit,author,action,eventName,ref,workflow
 
   rollback:
     name: Rollback
@@ -121,11 +105,3 @@ jobs:
         # Example: kubectl rollout undo deployment/todoweb-backend
         # Or: docker-compose -f docker/docker-compose.yml down && docker-compose -f docker/docker-compose.yml up -d
 
-    - name: Notify rollback
-      uses: 8398a7/action-slack@v3
-      if: always()
-      with:
-        status: ${{ job.status }}
-        channel: '#deployments'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-        fields: repo,message,commit,author,action,eventName,ref,workflow

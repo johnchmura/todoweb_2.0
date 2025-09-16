@@ -67,7 +67,6 @@ Configure these secrets in your GitHub repository settings:
 - `GITHUB_TOKEN` (automatically provided)
 
 ### Optional
-- `SLACK_WEBHOOK`: For deployment notifications
 - `SNYK_TOKEN`: For Snyk security scanning
 - `DOCKER_USERNAME`: For Docker registry authentication
 - `DOCKER_PASSWORD`: For Docker registry authentication
@@ -130,7 +129,6 @@ npm test
 - **Security**: Check Security tab for vulnerability reports
 - **Code Quality**: Review PR checks and coverage reports
 - **Deployments**: Monitor Actions tab for deployment status
-- **Notifications**: Configure Slack webhook for real-time updates
 
 ## Troubleshooting
 
