@@ -3,10 +3,10 @@ echo Starting MySQL container for TodoWeb...
 echo ==========================================
 
 REM Set environment variables
-set MYSQL_ROOT_PASSWORD=todoweb_root_password_123
-set MYSQL_DATABASE=todoweb
-set MYSQL_USER=todoweb_user
-set MYSQL_PASSWORD=todoweb_password_123
+set MYSQL_ROOT_PASSWORD=%MYSQL_ROOT_PASSWORD%
+set MYSQL_DATABASE=%MYSQL_DATABASE%
+set MYSQL_USER=%MYSQL_USER%
+set MYSQL_PASSWORD=%MYSQL_PASSWORD%
 
 echo Starting MySQL container...
 docker run -d ^
@@ -22,9 +22,9 @@ echo Waiting for MySQL to start...
 timeout /t 10 /nobreak
 
 echo MySQL container started!
-echo Database: todoweb
-echo User: todoweb_user
-echo Password: todoweb_password_123
+echo Database: %MYSQL_DATABASE%
+echo User: %MYSQL_USER%
+echo Password: [HIDDEN]
 echo Port: 3306
 echo.
 echo Container status:
@@ -32,7 +32,7 @@ docker ps --filter name=todoweb_mysql
 
 echo.
 echo To connect to MySQL:
-echo    docker exec -it todoweb_mysql mysql -u todoweb_user -p todoweb
+echo    docker exec -it todoweb_mysql mysql -u %MYSQL_USER% -p %MYSQL_DATABASE%
 echo.
 echo To stop MySQL:
 echo    docker stop todoweb_mysql

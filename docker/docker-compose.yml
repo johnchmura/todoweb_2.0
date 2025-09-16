@@ -7,10 +7,10 @@ services:
     container_name: todoweb_mysql_compose
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-todoweb_root_password}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-todoweb}
-      MYSQL_USER: ${MYSQL_USER:-todoweb_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-todoweb_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
       - ../backend/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -32,7 +32,7 @@ services:
     restart: unless-stopped
     environment:
       - DATABASE_URL=sqlite:///./todoweb.db
-      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - SECRET_KEY=${SECRET_KEY}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:80}
       - DB_ECHO=${DB_ECHO:-false}
     ports:

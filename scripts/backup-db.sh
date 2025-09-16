@@ -10,9 +10,9 @@ if [ -f .env ]; then
 fi
 
 # Set default values if not provided
-MYSQL_DATABASE=${MYSQL_DATABASE:-todoweb}
-MYSQL_USER=${MYSQL_USER:-todoweb_user}
-MYSQL_PASSWORD=${MYSQL_PASSWORD:-todoweb_password}
+MYSQL_DATABASE=${MYSQL_DATABASE}
+MYSQL_USER=${MYSQL_USER}
+MYSQL_PASSWORD=${MYSQL_PASSWORD}
 BACKUP_DIR=${BACKUP_DIR:-./backups}
 
 # Create backup directory if it doesn't exist

@@ -1,0 +1,184 @@
+name: AWS Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_to_aws:
+        description: 'Deploy to AWS'
+        required: true
+        default: false
+        type: boolean
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: todoweb
+  ECS_SERVICE: todoweb-service
+  ECS_CLUSTER: todoweb-cluster
+  ECS_TASK_DEFINITION: todoweb-task
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install Python dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+    
+    - name: Install Node dependencies
+      run: |
+        cd frontend
+        npm ci
+    
+    - name: Run backend tests
+      run: |
+        cd backend
+        pytest --cov=. --cov-report=xml
+    
+    - name: Run frontend tests
+      run: |
+        cd frontend
+        npm test -- --run --coverage
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./backend/coverage.xml,./frontend/coverage/lcov.info
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, tag, and push backend image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        cd backend
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY-backend:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY-backend:$IMAGE_TAG
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY-backend:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY-backend:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY-backend:latest
+
+    - name: Build, tag, and push frontend image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        cd frontend
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY-frontend:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY-frontend:latest
+
+  deploy-infrastructure:
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ inputs.deploy_to_aws == true }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.5.0
+
+    - name: Terraform Init
+      run: |
+        cd aws/terraform
+        terraform init
+
+    - name: Terraform Plan
+      run: |
+        cd aws/terraform
+        terraform plan -var="db_password=${{ secrets.DB_PASSWORD }}"
+
+    - name: Terraform Apply
+      run: |
+        cd aws/terraform
+        terraform apply -auto-approve -var="db_password=${{ secrets.DB_PASSWORD }}"
+
+    - name: Get outputs
+      id: terraform-outputs
+      run: |
+        cd aws/terraform
+        echo "ec2_ip=$(terraform output -raw ec2_public_ip)" >> $GITHUB_OUTPUT
+        echo "rds_endpoint=$(terraform output -raw rds_endpoint)" >> $GITHUB_OUTPUT
+        echo "s3_bucket=$(terraform output -raw s3_bucket_name)" >> $GITHUB_OUTPUT
+
+  deploy-application:
+    needs: [build-and-push, deploy-infrastructure]
+    runs-on: ubuntu-latest
+    if: ${{ inputs.deploy_to_aws == true }}
+    steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ needs.deploy-infrastructure.outputs.ec2_ip }}
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          cd /opt/todoweb
+          git pull origin main
+          docker-compose -f docker/docker-compose.prod.yml down
+          docker-compose -f docker/docker-compose.prod.yml up -d --build
+
+    - name: Upload static assets to S3
+      run: |
+        aws s3 sync frontend/dist/ s3://${{ needs.deploy-infrastructure.outputs.s3_bucket }}/ --delete
+
+  notify:
+    needs: [deploy-application]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: Notify deployment status
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      if: always()

@@ -3,8 +3,8 @@ echo Starting TodoWeb Backend with MySQL...
 echo ========================================
 
 REM Set environment variables for MySQL
-set DATABASE_URL=mysql+pymysql://todoweb_user:todoweb_password_123@localhost:3306/todoweb
-set SECRET_KEY=your-super-secret-jwt-key-change-this-in-production-12345
+set DATABASE_URL=mysql+pymysql://%MYSQL_USER%:%MYSQL_PASSWORD%@localhost:3306/%MYSQL_DATABASE%
+set SECRET_KEY=%SECRET_KEY%
 set ALLOWED_ORIGINS=http://localhost:3000,http://localhost:80,http://127.0.0.1:3000
 set DB_ECHO=false
 

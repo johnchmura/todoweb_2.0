@@ -1,0 +1,332 @@
+name: AWS Production Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+      deploy_to_aws:
+        description: 'Deploy to AWS'
+        required: true
+        default: false
+        type: boolean
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: todoweb
+  PROJECT_NAME: todoweb
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: backend/requirements.txt
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install Python dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+    
+    - name: Install Node dependencies
+      run: |
+        cd frontend
+        npm ci
+    
+    - name: Run backend tests
+      run: |
+        cd backend
+        pytest --cov=. --cov-report=xml --cov-report=html
+    
+    - name: Run frontend tests
+      run: |
+        cd frontend
+        npm test -- --run --coverage
+    
+    - name: Run security scans
+      run: |
+        cd backend
+        pip install bandit safety
+        bandit -r . -f json -o bandit-report.json || true
+        safety check --json --output safety-report.json || true
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          backend/coverage.xml
+          backend/bandit-report.json
+          backend/safety-report.json
+          frontend/coverage/lcov.info
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      backend-image: ${{ steps.backend-image.outputs.image }}
+      frontend-image: ${{ steps.frontend-image.outputs.image }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build and push backend image
+      id: backend-image
+      run: |
+        cd backend
+        IMAGE_TAG=${GITHUB_SHA::8}
+        ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
+        
+        # Build image
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY-backend:$IMAGE_TAG .
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY-backend:latest .
+        
+        # Push images
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY-backend:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY-backend:latest
+        
+        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY-backend:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+    - name: Build and push frontend image
+      id: frontend-image
+      run: |
+        cd frontend
+        IMAGE_TAG=${GITHUB_SHA::8}
+        ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
+        
+        # Build image
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG .
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY-frontend:latest .
+        
+        # Push images
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY-frontend:latest
+        
+        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY-frontend:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+  deploy-infrastructure:
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ inputs.deploy_to_aws == true }}
+    outputs:
+      ec2_ip: ${{ steps.terraform-outputs.outputs.ec2_ip }}
+      rds_endpoint: ${{ steps.terraform-outputs.outputs.rds_endpoint }}
+      s3_bucket: ${{ steps.terraform-outputs.outputs.s3_bucket }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.5.0
+
+    - name: Terraform Init
+      run: |
+        cd aws/terraform
+        terraform init
+
+    - name: Terraform Plan
+      run: |
+        cd aws/terraform
+        terraform plan -var="db_password=${{ secrets.DB_PASSWORD }}" -out=tfplan
+
+    - name: Terraform Apply
+      run: |
+        cd aws/terraform
+        terraform apply -auto-approve tfplan
+
+    - name: Get Terraform outputs
+      id: terraform-outputs
+      run: |
+        cd aws/terraform
+        echo "ec2_ip=$(terraform output -raw ec2_public_ip)" >> $GITHUB_OUTPUT
+        echo "rds_endpoint=$(terraform output -raw rds_endpoint)" >> $GITHUB_OUTPUT
+        echo "s3_bucket=$(terraform output -raw s3_bucket_name)" >> $GITHUB_OUTPUT
+
+  deploy-application:
+    needs: [build-and-push, deploy-infrastructure]
+    runs-on: ubuntu-latest
+    if: ${{ inputs.deploy_to_aws == true }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ needs.deploy-infrastructure.outputs.ec2_ip }}
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          # Update environment variables
+          export BACKEND_IMAGE="${{ needs.build-and-push.outputs.backend-image }}"
+          export FRONTEND_IMAGE="${{ needs.build-and-push.outputs.frontend-image }}"
+          export RDS_ENDPOINT="${{ needs.deploy-infrastructure.outputs.rds_endpoint }}"
+          export S3_BUCKET="${{ needs.deploy-infrastructure.outputs.s3_bucket }}"
+          
+          # Update .env file
+          cat > /opt/todoweb/.env << EOF
+          MYSQL_ROOT_PASSWORD=${{ secrets.DB_PASSWORD }}
+          MYSQL_DATABASE=todoweb
+          MYSQL_USER=todoweb_user
+          MYSQL_PASSWORD=${{ secrets.DB_PASSWORD }}
+          MYSQL_HOST=${{ needs.deploy-infrastructure.outputs.rds_endpoint }}
+          MYSQL_PORT=3306
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          ALLOWED_ORIGINS=http://${{ needs.deploy-infrastructure.outputs.ec2_ip }},https://${{ needs.deploy-infrastructure.outputs.ec2_ip }}
+          DB_ECHO=false
+          DATABASE_URL=mysql+pymysql://todoweb_user:${{ secrets.DB_PASSWORD }}@${{ needs.deploy-infrastructure.outputs.rds_endpoint }}:3306/todoweb
+          VITE_API_URL=http://${{ needs.deploy-infrastructure.outputs.ec2_ip }}/api
+          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION=${{ env.AWS_REGION }}
+          S3_BUCKET_NAME=${{ needs.deploy-infrastructure.outputs.s3_bucket }}
+          EOF
+          
+          # Pull latest images
+          docker pull ${{ needs.build-and-push.outputs.backend-image }}
+          docker pull ${{ needs.build-and-push.outputs.frontend-image }}
+          
+          # Update docker-compose file
+          cat > /opt/todoweb/docker/docker-compose.aws.yml << 'EOF'
+          version: '3.8'
+          services:
+            nginx:
+              image: nginx:alpine
+              ports:
+                - "80:80"
+                - "443:443"
+              volumes:
+                - ./nginx.conf:/etc/nginx/nginx.conf
+              depends_on:
+                - backend
+                - frontend
+              restart: unless-stopped
+            
+            backend:
+              image: ${{ needs.build-and-push.outputs.backend-image }}
+              environment:
+                - DATABASE_URL=mysql+pymysql://todoweb_user:${{ secrets.DB_PASSWORD }}@${{ needs.deploy-infrastructure.outputs.rds_endpoint }}:3306/todoweb
+                - SECRET_KEY=${{ secrets.SECRET_KEY }}
+                - ALLOWED_ORIGINS=http://${{ needs.deploy-infrastructure.outputs.ec2_ip }},https://${{ needs.deploy-infrastructure.outputs.ec2_ip }}
+                - DB_ECHO=false
+              restart: unless-stopped
+            
+            frontend:
+              image: ${{ needs.build-and-push.outputs.frontend-image }}
+              environment:
+                - VITE_API_URL=http://${{ needs.deploy-infrastructure.outputs.ec2_ip }}/api
+              restart: unless-stopped
+          EOF
+          
+          # Deploy application
+          cd /opt/todoweb
+          docker-compose -f docker/docker-compose.aws.yml down
+          docker-compose -f docker/docker-compose.aws.yml up -d
+
+    - name: Deploy static assets to S3
+      run: |
+        # Build frontend
+        cd frontend
+        npm ci
+        npm run build
+        
+        # Upload to S3
+        aws s3 sync dist/ s3://${{ needs.deploy-infrastructure.outputs.s3_bucket }}/ \
+          --delete \
+          --cache-control "max-age=31536000" \
+          --exclude "*.html" \
+          --exclude "*.json"
+        
+        # Upload HTML files with shorter cache
+        aws s3 sync dist/ s3://${{ needs.deploy-infrastructure.outputs.s3_bucket }}/ \
+          --cache-control "max-age=0, no-cache, no-store, must-revalidate" \
+          --include "*.html" \
+          --include "*.json"
+
+  health-check:
+    needs: [deploy-application]
+    runs-on: ubuntu-latest
+    if: ${{ inputs.deploy_to_aws == true }}
+    steps:
+    - name: Wait for deployment
+      run: sleep 60
+
+    - name: Health check
+      run: |
+        EC2_IP="${{ needs.deploy-infrastructure.outputs.ec2_ip }}"
+        
+        # Check if application is responding
+        for i in {1..10}; do
+          if curl -f http://$EC2_IP/health; then
+            echo "✅ Application is healthy"
+            break
+          else
+            echo "⏳ Waiting for application to start... ($i/10)"
+            sleep 30
+          fi
+        done
+        
+        # Check API endpoints
+        curl -f http://$EC2_IP/api/docs || echo "❌ API docs not accessible"
+        curl -f http://$EC2_IP/ || echo "❌ Frontend not accessible"
+
+  notify:
+    needs: [health-check]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: Notify deployment status
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+      if: always()

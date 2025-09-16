@@ -10,13 +10,13 @@ echo    3. Frontend (Node.js)
 echo.
 
 echo Starting MySQL database...
-docker run -d --name todoweb_mysql -e MYSQL_ROOT_PASSWORD=todoweb_root_password_123 -e MYSQL_DATABASE=todoweb -e MYSQL_USER=todoweb_user -e MYSQL_PASSWORD=todoweb_password_123 -p 3306:3306 mysql:8.0
+docker run -d --name todoweb_mysql -e MYSQL_ROOT_PASSWORD=%MYSQL_ROOT_PASSWORD% -e MYSQL_DATABASE=%MYSQL_DATABASE% -e MYSQL_USER=%MYSQL_USER% -e MYSQL_PASSWORD=%MYSQL_PASSWORD% -p 3306:3306 mysql:8.0
 
 echo Waiting for MySQL to start...
 timeout /t 15 /nobreak
 
 echo Starting Backend API...
-start "Backend API" cmd /k "cd backend && set DATABASE_URL=mysql+pymysql://todoweb_user:todoweb_password_123@localhost:3306/todoweb && set SECRET_KEY=your-super-secret-jwt-key-change-this-in-production-12345 && set ALLOWED_ORIGINS=http://localhost:3000,http://localhost:80,http://127.0.0.1:3000 && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000"
+start "Backend API" cmd /k "cd backend && set DATABASE_URL=mysql+pymysql://%MYSQL_USER%:%MYSQL_PASSWORD%@localhost:3306/%MYSQL_DATABASE% && set SECRET_KEY=%SECRET_KEY% && set ALLOWED_ORIGINS=http://localhost:3000,http://localhost:80,http://127.0.0.1:3000 && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000"
 
 echo Waiting for backend to start...
 timeout /t 5 /nobreak

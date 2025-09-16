@@ -7,10 +7,10 @@ services:
     container_name: todoweb_mysql_light
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-todoweb_root_password}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-todoweb}
-      MYSQL_USER: ${MYSQL_USER:-todoweb_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-todoweb_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - mysql_data_light:/var/lib/mysql
     ports:
@@ -37,8 +37,8 @@ services:
     container_name: todoweb_backend_light
     restart: unless-stopped
     environment:
-      - DATABASE_URL=mysql+pymysql://${MYSQL_USER:-todoweb_user}:${MYSQL_PASSWORD:-todoweb_password}@mysql:3306/${MYSQL_DATABASE:-todoweb}
-      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - DATABASE_URL=mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      - SECRET_KEY=${SECRET_KEY}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:80}
       - DB_ECHO=${DB_ECHO:-false}
     ports:
