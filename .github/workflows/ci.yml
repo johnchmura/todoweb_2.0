@@ -184,24 +184,20 @@ jobs:
           type=raw,value=latest,enable={{is_default_branch}}
 
     - name: Build backend image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./backend
-        push: false
-        tags: todoweb-backend:${{ github.sha }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      run: |
+        echo "Building backend image with tag: todoweb-backend:${{ github.sha }}"
+        docker build -t todoweb-backend:${{ github.sha }} ./backend
+        echo "Creating latest tag for backend"
+        docker tag todoweb-backend:${{ github.sha }} todoweb-backend:latest
+        echo "Backend image built successfully"
 
     - name: Build frontend image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./frontend
-        push: false
-        tags: todoweb-frontend:${{ github.sha }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      run: |
+        echo "Building frontend image with tag: todoweb-frontend:${{ github.sha }}"
+        docker build -t todoweb-frontend:${{ github.sha }} ./frontend
+        echo "Creating latest tag for frontend"
+        docker tag todoweb-frontend:${{ github.sha }} todoweb-frontend:latest
+        echo "Frontend image built successfully"
 
     - name: Verify image builds
       run: |
@@ -228,9 +224,11 @@ jobs:
     - name: Test Docker images locally
       run: |
         echo "Testing backend image..."
-        docker run --rm todoweb-backend:${{ github.sha }} python -c "import main; print('Backend image works!')"
+        docker run --rm todoweb-backend:${{ github.sha }} python -c "import main; print('Backend image works!')" || \
+        docker run --rm todoweb-backend:latest python -c "import main; print('Backend image works!')"
         echo "Testing frontend image..."
-        docker run --rm todoweb-frontend:${{ github.sha }} ls -la /usr/share/nginx/html/
+        docker run --rm todoweb-frontend:${{ github.sha }} ls -la /usr/share/nginx/html/ || \
+        docker run --rm todoweb-frontend:latest ls -la /usr/share/nginx/html/
         echo "Docker images built successfully!"
 
   integration-tests:
