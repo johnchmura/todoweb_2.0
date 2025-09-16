@@ -18,11 +18,11 @@ def test_backend():
     try:
         response = requests.get(f"{BASE_URL}/docs")
         if response.status_code == 200:
-            print("✅ API is running and accessible")
+            print("API is running and accessible")
         else:
-            print("❌ API returned unexpected status code")
+            print("API returned unexpected status code")
     except requests.exceptions.ConnectionError:
-        print("❌ Cannot connect to API. Make sure the backend is running on port 8000")
+        print("Cannot connect to API. Make sure the backend is running on port 8000")
         return False
     
     # Test 2: Register a test user
@@ -38,14 +38,14 @@ def test_backend():
     try:
         response = requests.post(f"{BASE_URL}/auth/register", json=test_user)
         if response.status_code == 200:
-            print("✅ User registration successful")
+            print("User registration successful")
             user_data = response.json()
             print(f"   User ID: {user_data['id']}")
         else:
-            print(f"❌ User registration failed: {response.status_code}")
+            print(f"User registration failed: {response.status_code}")
             print(f"   Response: {response.text}")
     except Exception as e:
-        print(f"❌ Error during user registration: {e}")
+        print(f"Error during user registration: {e}")
     
     # Test 3: Check username availability
     print("\n3. Testing username check...")
@@ -54,13 +54,13 @@ def test_backend():
         if response.status_code == 200:
             data = response.json()
             if not data["available"]:
-                print("✅ Username check working (username taken as expected)")
+                print("Username check working (username taken as expected)")
             else:
-                print("⚠️  Username check returned available (unexpected)")
+                print("Username check returned available (unexpected)")
         else:
-            print(f"❌ Username check failed: {response.status_code}")
+            print(f"Username check failed: {response.status_code}")
     except Exception as e:
-        print(f"❌ Error during username check: {e}")
+        print(f"Error during username check: {e}")
     
     # Test 4: Test available username
     print("\n4. Testing available username...")
@@ -69,13 +69,13 @@ def test_backend():
         if response.status_code == 200:
             data = response.json()
             if data["available"]:
-                print("✅ Username check working (username available as expected)")
+                print("Username check working (username available as expected)")
             else:
-                print("⚠️  Username check returned taken (unexpected)")
+                print("Username check returned taken (unexpected)")
         else:
-            print(f"❌ Username check failed: {response.status_code}")
+            print(f"Username check failed: {response.status_code}")
     except Exception as e:
-        print(f"❌ Error during username check: {e}")
+        print(f"Error during username check: {e}")
     
     print("\n" + "=" * 50)
     print("Backend test completed!")
