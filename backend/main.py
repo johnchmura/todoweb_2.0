@@ -44,7 +44,15 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     # Allow tests to run without SECRET_KEY by using a default test key
     import sys
-    if "pytest" in sys.modules:
+    # Check if we're in any test environment (pytest, docker test, CI, etc.)
+    is_test_env = (
+        "pytest" in sys.modules or 
+        "test" in sys.argv[0] or 
+        os.getenv("PYTEST_CURRENT_TEST") or
+        os.getenv("CI") or
+        "python -c" in " ".join(sys.argv)
+    )
+    if is_test_env:
         SECRET_KEY = "test-secret-key-for-pytest"
     else:
         raise ValueError("SECRET_KEY environment variable is required")
